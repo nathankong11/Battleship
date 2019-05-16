@@ -1,10 +1,13 @@
 from game import *
 
-g = Grid(10)
-g.reset()
+g = Grid()
 g.randomPlacement()
-
 g.printShips()
-g.randomShoot()
 
 g.printAttempts()
+
+num_turns = 0
+while not g.gameOver():
+    g.randomShoot()
+    num_turns += 1
+print num_turns

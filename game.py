@@ -1,11 +1,5 @@
 import random
 
-class GameState:
-    def __init__(self, grid1, grid2):
-        self.num_players = 2
-        self.player1_grid = Grid
-        self.player2_grid = Grid
-
 class Grid:
     """
     A 2-dimensional array. Data is accessed
@@ -26,35 +20,10 @@ class Grid:
     2: hit
     """
 
-    def __init__(self, size):
-        self.width = size
-        self.height = size
-        self.ships = [[None for _ in range(self.width)] for _ in range(self.height)]
-        self.attempts = [[0 for _ in range(self.width)] for _ in range(self.height)]
-        self.num_hit = 0
-        self.num_miss = 0
-        self.num_sunk = 0
-        self.ship_size = {
-        'destroyer': 2,
-        'submarine': 3,
-        'cruiser': 3,
-        'battleship': 4,
-        'carrier': 5,
-        }
-        self.ship_hits = {
-        'destroyer': 0,
-        'submarine': 0,
-        'cruiser': 0,
-        'battleship': 0,
-        'carrier': 0,
-        }
-        self.sunk_ships = {
-        'destroyer': 0,
-        'submarine': 0,
-        'cruiser': 0,
-        'battleship': 0,
-        'carrier': 0,
-        }
+    def __init__(self, size = 10):
+        if size < 5:
+            raise Exception('size should be at least 5. The value of size was: {}'.format(size))
+        self.reset(size)
 
     # returns if (x,y) is inside the grid
     def inside(self, x, y):
@@ -150,10 +119,19 @@ class Grid:
             y = random.randint(0, self.height-1)
             success = self.shoot(x,y)
 
+    # returns a list of coords of legal shots that can be taken
+    def getLegalShots(self):
+        coords = []
+        for x in self.width:
+            for y in self.height:
+                if legalShot(x,y):
+                    coords.append((x,y))
+        return coords
+
     # returns 1 if game is over
     def gameOver(self):
-        for ship, sunk in self.sunk_ships:
-            if not sunk:
+        for ship in self.sunk_ships:
+            if not self.sunk_ships[ship]:
                 return 0
         return 1
 
@@ -179,13 +157,29 @@ class Grid:
         print out
 
     # Resets the grid to default state
-    def reset(self):
+    def reset(self, size):
+        self.width = size
+        self.height = size
         self.ships = [[None for _ in range(self.width)] for _ in range(self.height)]
         self.attempts = [[0 for _ in range(self.width)] for _ in range(self.height)]
         self.num_hit = 0
         self.num_miss = 0
         self.num_sunk = 0
+        self.ship_size = {
+        'destroyer': 2,
+        'submarine': 3,
+        'cruiser': 3,
+        'battleship': 4,
+        'carrier': 5,
+        }
         self.ship_hits = {
+        'destroyer': 0,
+        'submarine': 0,
+        'cruiser': 0,
+        'battleship': 0,
+        'carrier': 0,
+        }
+        self.sunk_ships = {
         'destroyer': 0,
         'submarine': 0,
         'cruiser': 0,
