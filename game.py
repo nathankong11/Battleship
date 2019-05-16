@@ -23,7 +23,36 @@ class Grid:
     def __init__(self, size = 10):
         if size < 5:
             raise Exception('size should be at least 5. The value of size was: {}'.format(size))
-        self.reset(size)
+
+        self.width = size
+        self.height = size
+        self.ship_size = {
+        'destroyer': 2,
+        'submarine': 3,
+        'cruiser': 3,
+        'battleship': 4,
+        'carrier': 5,
+        }
+
+        self.ships = [[None for _ in range(self.width)] for _ in range(self.height)]
+        self.attempts = [[0 for _ in range(self.width)] for _ in range(self.height)]
+        self.num_hit = 0
+        self.num_miss = 0
+        self.num_sunk = 0
+        self.ship_hits = {
+        'destroyer': 0,
+        'submarine': 0,
+        'cruiser': 0,
+        'battleship': 0,
+        'carrier': 0,
+        }
+        self.sunk_ships = {
+        'destroyer': 0,
+        'submarine': 0,
+        'cruiser': 0,
+        'battleship': 0,
+        'carrier': 0,
+        }
 
     # returns if (x,y) is inside the grid
     def inside(self, x, y):
@@ -157,21 +186,12 @@ class Grid:
         print out
 
     # Resets the grid to default state
-    def reset(self, size):
-        self.width = size
-        self.height = size
+    def reset(self):
         self.ships = [[None for _ in range(self.width)] for _ in range(self.height)]
         self.attempts = [[0 for _ in range(self.width)] for _ in range(self.height)]
         self.num_hit = 0
         self.num_miss = 0
         self.num_sunk = 0
-        self.ship_size = {
-        'destroyer': 2,
-        'submarine': 3,
-        'cruiser': 3,
-        'battleship': 4,
-        'carrier': 5,
-        }
         self.ship_hits = {
         'destroyer': 0,
         'submarine': 0,
