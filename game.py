@@ -121,7 +121,7 @@ class Grid:
     def legalShot(self, x,y):
         return self.inside(x,y) and self.attempts[x][y] == 0
 
-    # Makes an attempt at (x,y) Returns 0 if miss, 1 if hit, size of ship if sunk ship, returns -1 if invalid shot
+    # Makes an attempt at (x,y) Returns 0 if miss, 1 if hit, or size of ship if sunk ship. Returns -1 if invalid shot
     def shoot(self, x,y):
         if not self.legalShot(x,y):
             return -1
