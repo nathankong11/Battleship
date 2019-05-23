@@ -206,3 +206,55 @@ class Grid:
         'battleship': 0,
         'carrier': 0,
         }
+
+class MDP:
+    # Return the start state.
+    def startState(self):
+        game = Grid()
+        return State(game)
+
+    # Return set of actions possible from |state|.
+    def getLegalActions(state):
+        return state.game.getLegalShots()
+
+    def generateSuccessor(self, action):
+        new_game = deepcopy(game)
+        new_state = State(new_game)
+        x, y = action
+
+        new_state.game.shoot(x,y)
+        new_state.attempts = new_state.game.attempts
+        new_state.sunk_ships = new_state.game.sunk_ships
+        new_state.numAttempts = self.numAttempts + 1
+
+        return new_state
+
+    def isEnd(self):
+        return self.game.gameOver()
+
+    # Return a reward for taking an action from state to new_state
+    def getReward(self, state, action, new_state):
+        if new_state.isEnd():
+            return 100
+        if state.game.shipAt(action[0],action[1]):
+            return 2
+        return -1
+
+    def discount(self):
+        return 0.9
+
+    # Compute set of states reachable from startState.  Helper function for
+    # MDPAlgorithms to know which states to compute values and policies for.
+    # This function sets |self.states| to be the set of all states.
+    def computeStates(self):
+        self.states = set()
+        queue = []
+        self.states.add(self.startState())
+        queue.append(self.startState())
+        while len(queue) > 0:
+            state = queue.pop()
+            for action in self.getLegalActions(state):
+                for newState in self.generateSuccessor(state, action):
+                    if newState not in self.states:
+                        self.states.add(newState)
+                        queue.append(newState)
