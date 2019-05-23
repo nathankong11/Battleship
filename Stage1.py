@@ -46,10 +46,9 @@ class MC:
         return -1
 
 class QLearningAlgorithm:
-    def __init__(self, actions, discount, featureExtractor, explorationProb=0.2):
-        self.actions = actions
+    def __init__(self, discount, explorationProb=0.2):
         self.discount = discount
-        self.featureExtractor = featureExtractor
+        self.featureExtractor = self.identityFeatureExtractor
         self.explorationProb = explorationProb
         self.weights = defaultdict(float)
         self.numIters = 0
@@ -71,10 +70,11 @@ class QLearningAlgorithm:
     # |explorationProb|, take a random action.
     def getAction(self, state):
         self.numIters += 1
+        actions = state.getLegalActions()
         if random.random() < self.explorationProb:
-            return random.choice(self.actions(state))
+            return random.choice(actions)
         else:
-            return max((self.getQ(state, action), action) for action in self.actions(state))[1]
+            return max((self.getQ(state, action), action) for action in actions)[1]
 
     # Call this function to get the step size to update the weights.
     def getStepSize(self):
@@ -98,7 +98,8 @@ class QLearningAlgorithm:
         phi = self.featureExtractor(state, action)
         Q = self.getQ(state, action)
         eta = self.getStepSize()
-        Vopt = max(self.getQ(newState, newAction) for newAction in self.actions(newState))
+        newStateActions = newState.getLegalActions()
+        Vopt = max(self.getQ(newState, newAction) for newAction in newStateActions)
         if newState == None:
             Vopt = 0
         intermediateValue = (eta * (Q - (reward + self.discount * Vopt)))
