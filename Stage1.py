@@ -1,20 +1,4 @@
 from game import *
-from copy import *
-
-class State:
-    '''
-    state:
-
-    grid of attempted shots
-    which ships are sunk
-    number of attempts
-    '''
-
-    def __init__(self, game):
-        self.game = game
-        self.attempts = game.attempts
-        self.sunk_ships = game.sunk_ships
-        self.numAttempts = 0
 
 '''
 class MC:
@@ -134,4 +118,4 @@ mdp = MDP()
 mdp.computeStates()
 rl = QLearningAlgorithm(0.95, 0.2)
 # We call this here so that the stepSize will be 1
-simulate(mdp, rl, 30000)
+simulate(mdp, rl, 10)

@@ -1,11 +1,12 @@
 import random
+from copy import *
 
 class Grid:
     """
     A 2-dimensional array. Data is accessed
     via grid[x][y] where (x,y) are positions with x horizontal,
     y vertical and the origin (0,0) in the top left corner.
-    
+
     ships(x,y):
     None: empty
     destroyer: (2 hole ship)
@@ -151,9 +152,9 @@ class Grid:
     # returns a list of coords of legal shots that can be taken
     def getLegalShots(self):
         coords = []
-        for x in self.width:
-            for y in self.height:
-                if legalShot(x,y):
+        for x in range(self.width):
+            for y in range(self.height):
+                if self.legalShot(x,y):
                     coords.append((x,y))
         return coords
 
@@ -207,25 +208,43 @@ class Grid:
         'carrier': 0,
         }
 
+
+class State:
+    '''
+    state:
+
+    grid of attempted shots
+    which ships are sunk
+    number of attempts
+    '''
+
+    def __init__(self, game):
+        self.game = game
+        self.attempts = game.attempts
+        self.sunk_ships = game.sunk_ships
+        self.numAttempts = 0
+
+
 class MDP:
     # Return the start state.
     def startState(self):
         game = Grid()
-        return State(game)
+        state = State(game)
+        return state
 
     # Return set of actions possible from |state|.
-    def getLegalActions(state):
+    def getLegalActions(self, state):
         return state.game.getLegalShots()
 
-    def generateSuccessor(self, action):
-        new_game = deepcopy(game)
+    def generateSuccessor(self, state, action):
+        new_game = deepcopy(state.game)
         new_state = State(new_game)
         x, y = action
 
         new_state.game.shoot(x,y)
         new_state.attempts = new_state.game.attempts
         new_state.sunk_ships = new_state.game.sunk_ships
-        new_state.numAttempts = self.numAttempts + 1
+        new_state.numAttempts = state.numAttempts + 1
 
         return new_state
 
@@ -262,7 +281,7 @@ class MDP:
         while len(queue) > 0:
             state = queue.pop()
             for action in self.getLegalActions(state):
-                for newState in self.generateSuccessor(state, action):
-                    if newState not in self.states:
-                        self.states.add(newState)
-                        queue.append(newState)
+                newState = self.generateSuccessor(state, action)
+                if newState not in self.states:
+                    self.states.add(newState)
+                    queue.append(newState)
