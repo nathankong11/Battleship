@@ -240,6 +240,14 @@ class MDP:
             return 2
         return -1
 
+    # Return a list of (newState, prob, reward) tuples corresponding to edges
+    # coming out of |state|.
+    # Mapping to notation from class:
+    #   state = s, action = a, newState = s', prob = T(s, a, s'), reward = Reward(s, a, s')
+    # If IsEnd(state), return the empty list.
+    def succAndProbReward(self, state, action):
+        return [(self.generateSuccessor(action), 1, self.getReward(state, action, self.generateSuccessor(action)))]
+
     def discount(self):
         return 0.9
 
