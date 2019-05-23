@@ -173,7 +173,8 @@ class Grid:
                 ship = self.ships[x][y]
                 out += '' + str(0) if ship == None else str(self.ship_size[ship])
                 out += ' '
-            out += '\n'
+            if x < len(self.ships) - 1:
+                out += '\n'
         print out
 
     # Prints the state of all the attempts on the grid
@@ -183,7 +184,8 @@ class Grid:
             for y in range(len(self.attempts[x])):
                 out += '' + str(self.attempts[x][y])
                 out += ' '
-            out += '\n'
+            if x < len(self.attempts) - 1:
+                out += '\n'
         print out
 
     # Resets the grid to default state
@@ -222,13 +224,21 @@ class State:
         self.game = game
         self.attempts = game.attempts
         self.sunk_ships = game.sunk_ships
-        self.numAttempts = 0
+
+    def isEnd(self):
+        return self.game.gameOver()
 
 
 class MDP:
+    def __init__(self):
+        self.start = self.startState()
     # Return the start state.
     def startState(self):
-        game = Grid()
+        game = Grid(5)
+        game.randomPlacement()
+        print("_____")
+        game.printShips()
+        print("_____")
         state = State(game)
         return state
 
@@ -237,7 +247,15 @@ class MDP:
         return state.game.getLegalShots()
 
     def generateSuccessor(self, state, action):
+        if state.isEnd():
+            return None
+
         new_game = deepcopy(state.game)
+        print("Successor game copy: ")
+        new_game.printShips()
+        print("\n")
+        new_game.printAttempts()
+        print("-------")
         new_state = State(new_game)
         x, y = action
 
@@ -247,9 +265,6 @@ class MDP:
         new_state.numAttempts = state.numAttempts + 1
 
         return new_state
-
-    def isEnd(self):
-        return self.game.gameOver()
 
     # Return a reward for taking an action from state to new_state
     def getReward(self, state, action, new_state):
@@ -276,12 +291,20 @@ class MDP:
     def computeStates(self):
         self.states = set()
         queue = []
-        self.states.add(self.startState())
-        queue.append(self.startState())
+        self.states.add(self.start)
+        queue.append(self.start)
         while len(queue) > 0:
             state = queue.pop()
+            print("pop")
+            state.game.printAttempts()
+            print(state.numAttempts)
             for action in self.getLegalActions(state):
+                print("next")
+                print(action)
                 newState = self.generateSuccessor(state, action)
+                #print(newState.game.printAttempts())
+                if newState == None:
+                    continue
                 if newState not in self.states:
                     self.states.add(newState)
                     queue.append(newState)

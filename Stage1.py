@@ -115,7 +115,11 @@ def simulate(mdp, rl, numTrials=10, maxIterations=1000, verbose=False,
 
 
 mdp = MDP()
+print("beginning compute states")
 mdp.computeStates()
+print("finished compute states")
 rl = QLearningAlgorithm(0.95, 0.2)
 # We call this here so that the stepSize will be 1
+print("beginning simulate")
 simulate(mdp, rl, 10)
+print("finished simulate")
