@@ -1,7 +1,7 @@
 import random
 from copy import *
 
-class Grid:
+class State:
     """
     A 2-dimensional array. Data is accessed
     via grid[x][y] where (x,y) are positions with x horizontal,
@@ -209,25 +209,6 @@ class Grid:
         'battleship': 0,
         'carrier': 0,
         }
-
-
-class State:
-    '''
-    state:
-
-    grid of attempted shots
-    which ships are sunk
-    number of attempts
-    '''
-
-    def __init__(self, game):
-        self.game = game
-        self.attempts = game.attempts
-        self.sunk_ships = game.sunk_ships
-
-    def isEnd(self):
-        return self.game.gameOver()
-
 
 class MDP:
     def __init__(self):
