@@ -1,4 +1,5 @@
 from game import *
+import math
 
 '''
 class MC:
@@ -8,14 +9,15 @@ class MC:
 
 
 class QLearningAlgorithm:
-    def __init__(self, discount, explorationProb=0.2):
+    def __init__(self, mdp, discount, explorationProb=0.2):
+        self.mdp = mdp
         self.discount = discount
         self.featureExtractor = self.identityFeatureExtractor
         self.explorationProb = explorationProb
         self.weights = defaultdict(float)
         self.numIters = 0
 
-    def identityFeatureExtractor(state, action):
+    def identityFeatureExtractor(self, state, action):
         featureKey = (state, action)
         featureValue = 1
         return [(featureKey, featureValue)]
@@ -32,7 +34,9 @@ class QLearningAlgorithm:
     # |explorationProb|, take a random action.
     def getAction(self, state):
         self.numIters += 1
-        actions = state.getLegalActions()
+        actions = self.mdp.getLegalActions(state)
+        if actions == []:
+            return None
         if random.random() < self.explorationProb:
             return random.choice(actions)
         else:
@@ -60,8 +64,11 @@ class QLearningAlgorithm:
         phi = self.featureExtractor(state, action)
         Q = self.getQ(state, action)
         eta = self.getStepSize()
-        newStateActions = newState.getLegalActions()
-        Vopt = max(self.getQ(newState, newAction) for newAction in newStateActions)
+        newStateActions = self.mdp.getLegalActions(newState)
+        if newStateActions == []:
+            Vopt = 0
+        else:
+            Vopt = max(self.getQ(newState, newAction) for newAction in newStateActions)
         if newState == None:
             Vopt = 0
         intermediateValue = (eta * (Q - (reward + self.discount * Vopt)))
@@ -85,7 +92,7 @@ def simulate(mdp, rl, numTrials=10, maxIterations=1000, verbose=False,
 
     totalRewards = []  # The rewards we get on each trial
     for trial in range(numTrials):
-        state = mdp.startState()
+        state = mdp.start
         sequence = [state]
         totalDiscount = 1
         totalReward = 0
@@ -115,11 +122,11 @@ def simulate(mdp, rl, numTrials=10, maxIterations=1000, verbose=False,
 
 
 mdp = MDP()
-print("beginning compute states")
-mdp.computeStates()
-print("finished compute states")
-rl = QLearningAlgorithm(0.95, 0.2)
+#print("beginning compute states")
+#mdp.computeStates()
+#print("finished compute states")
+rl = QLearningAlgorithm(mdp, 0.95, 0.2)
 # We call this here so that the stepSize will be 1
 print("beginning simulate")
-simulate(mdp, rl, 10)
+simulate(mdp, rl, 100, verbose=True)
 print("finished simulate")

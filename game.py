@@ -1,5 +1,7 @@
 import random
 from copy import *
+import pickle
+from collections import *
 
 class State:
     """
@@ -227,8 +229,9 @@ class MDP:
 
     # Return set of actions possible from |state|.
     def getLegalActions(self, state):
-        actions = state.getLegalShots()
-        return actions if actions != None else None
+        if state == None:
+            return []
+        return state.getLegalShots()
 
     def generateSuccessor(self, state, action):
         if state.isEnd():
@@ -253,6 +256,8 @@ class MDP:
     #   state = s, action = a, new_state = s', prob = T(s, a, s'), reward = Reward(s, a, s')
     # If IsEnd(state), return the empty list.
     def succAndProbReward(self, state, action):
+        if action == None:
+            return []
         new_state = self.generateSuccessor(state, action)
         if new_state == None:
             return []
@@ -270,13 +275,14 @@ class MDP:
         self.states.add(self.start)
         queue.append(self.start)
         while len(queue) > 0:
-            print len(self.states)
             state = queue.pop()
             for action in self.getLegalActions(state):
                 for newState, prob, reward in self.succAndProbReward(state, action):
                     if newState not in self.states:
                         self.states.add(newState)
                         queue.append(newState)
+        with open('5x5_states1.states', 'wb') as states_file:
+            pickle.dump(self.states, states_file)
             '''
                 new_state = self.generateSuccessor(state, action)
                 if new_state == None:
