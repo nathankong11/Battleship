@@ -37,6 +37,7 @@ class State:
 
         self.ships = [[None for _ in range(self.width)] for _ in range(self.height)]
         self.attempts = [[0 for _ in range(self.width)] for _ in range(self.height)]
+        self.num_attempts = 0
         self.num_hit = 0
         self.num_miss = 0
         self.num_sunk = 0
@@ -124,18 +125,22 @@ class State:
 
     # Makes an attempt at (x,y) Returns 0 if miss, 1 if hit, or size of ship if sunk ship. Returns -1 if invalid shot
     def shoot(self, x,y):
+        # if illegal shot
         if not self.legalShot(x,y):
             return -1
+        self.num_attempts += 1
+        # if ship at location
         if self.shipAt(x,y):
             self.num_hit += 1
             self.attempts[x][y] = 2
-
             ship = self.ships[x][y]
             self.ship_hits[ship] += 1
+            # if sunk ship
             if self.sunkShip(ship):
                 self.num_sunk += 1
                 return self.ship_size[ship]
             return 1
+        # if ship not at location
         else:
             self.num_miss += 1
             self.attempts[x][y] = 1
@@ -143,11 +148,11 @@ class State:
 
     # randomly shoots on the grid
     def randomShoot(self):
-        success = -1
-        while success == -1:
+        successful = False
+        while not successful:
             x = random.randint(0, self.width-1)
             y = random.randint(0, self.height-1)
-            success = self.shoot(x,y)
+            successful = self.shoot(x,y) > -1
 
     # returns a list of coords of legal shots that can be taken
     def getLegalShots(self):
@@ -159,11 +164,8 @@ class State:
         return coords
 
     # returns 1 if game is over
-    def gameOver(self):
-        for ship in self.sunk_ships:
-            if not self.sunk_ships[ship]:
-                return 0
-        return 1
+    def isEnd(self):
+        return self.num_sunk == 5
 
     # Prints the state of all the ships on the grid
     def printShips(self):
@@ -192,6 +194,7 @@ class State:
     def reset(self):
         self.ships = [[None for _ in range(self.width)] for _ in range(self.height)]
         self.attempts = [[0 for _ in range(self.width)] for _ in range(self.height)]
+        self.num_attempts = 0
         self.num_hit = 0
         self.num_miss = 0
         self.num_sunk = 0
@@ -215,53 +218,45 @@ class MDP:
         self.start = self.startState()
     # Return the start state.
     def startState(self):
-        game = Grid(5)
-        game.randomPlacement()
+        state = State(5)
+        state.randomPlacement()
         print("_____")
-        game.printShips()
+        state.printShips()
         print("_____")
-        state = State(game)
         return state
 
     # Return set of actions possible from |state|.
     def getLegalActions(self, state):
-        return state.game.getLegalShots()
+        actions = state.getLegalShots()
+        return actions if actions != None else None
 
     def generateSuccessor(self, state, action):
         if state.isEnd():
             return None
 
-        new_game = deepcopy(state.game)
-        print("Successor game copy: ")
-        new_game.printShips()
-        print("\n")
-        new_game.printAttempts()
-        print("-------")
-        new_state = State(new_game)
+        new_state = deepcopy(state)
         x, y = action
-
-        new_state.game.shoot(x,y)
-        new_state.attempts = new_state.game.attempts
-        new_state.sunk_ships = new_state.game.sunk_ships
-        new_state.numAttempts = state.numAttempts + 1
-
+        new_state.shoot(x,y)
         return new_state
 
     # Return a reward for taking an action from state to new_state
     def getReward(self, state, action, new_state):
         if new_state.isEnd():
             return 100
-        if state.game.shipAt(action[0],action[1]):
+        if state.shipAt(action[0],action[1]):
             return 2
         return -1
 
-    # Return a list of (newState, prob, reward) tuples corresponding to edges
+    # Return a list of (new_state, prob, reward) tuples corresponding to edges
     # coming out of |state|.
     # Mapping to notation from class:
-    #   state = s, action = a, newState = s', prob = T(s, a, s'), reward = Reward(s, a, s')
+    #   state = s, action = a, new_state = s', prob = T(s, a, s'), reward = Reward(s, a, s')
     # If IsEnd(state), return the empty list.
     def succAndProbReward(self, state, action):
-        return [(self.generateSuccessor(action), 1, self.getReward(state, action, self.generateSuccessor(action)))]
+        new_state = self.generateSuccessor(state, action)
+        if new_state == None:
+            return []
+        return [(new_state, 1.0, self.getReward(state, action, new_state))]
 
     def discount(self):
         return 0.9
@@ -275,17 +270,21 @@ class MDP:
         self.states.add(self.start)
         queue.append(self.start)
         while len(queue) > 0:
+            print len(self.states)
             state = queue.pop()
-            print("pop")
-            state.game.printAttempts()
-            print(state.numAttempts)
             for action in self.getLegalActions(state):
-                print("next")
-                print(action)
-                newState = self.generateSuccessor(state, action)
-                #print(newState.game.printAttempts())
-                if newState == None:
+                for newState, prob, reward in self.succAndProbReward(state, action):
+                    if newState not in self.states:
+                        self.states.add(newState)
+                        queue.append(newState)
+            '''
+                new_state = self.generateSuccessor(state, action)
+                if new_state == None:
                     continue
-                if newState not in self.states:
-                    self.states.add(newState)
-                    queue.append(newState)
+                #new_state.printAttempts()
+                #print new_state.num_attempts
+                #print '__________'
+                if new_state not in self.states:
+                    self.states.add(new_state)
+                    queue.append(new_state)
+            '''

@@ -3,7 +3,7 @@ from game import *
 '''
 class MC:
     def getTransitionProb(self, state, action, new_state):
-        return float(1)/(state.game.width * state.game.height - state.numAttempts)
+        return float(1)/(state.width * state.height - state.numAttempts)
 '''
 
 
