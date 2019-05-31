@@ -2,8 +2,7 @@ import random
 from copy import *
 import pickle
 from collections import *
-
-
+import math
 
 class State:
     """
@@ -11,7 +10,7 @@ class State:
     via grid[x][y] where (x,y) are positions with x horizontal,
     y vertical and the origin (0,0) in the top left corner.
 
-    ships(x,y):
+    ships[x][y]:
     None: empty
     destroyer: (2 hole ship)
     submarine: (3 hole ship)
@@ -19,7 +18,7 @@ class State:
     battleship: (4 hole ship)
     carrier: (5 hole ship)
 
-    attempts(x,y):
+    attempts[x][y]:
     0: no attempt
     1: miss
     2: hit
@@ -133,18 +132,19 @@ class State:
         if not self.legalShot(x,y):
             return -1
         self.num_attempts += 1
-        # if ship at location
+        # if hit
         if self.shipAt(x,y):
             self.num_hit += 1
             self.attempts[x][y] = 2
             ship = self.ships[x][y]
             self.ship_hits[ship] += 1
-            # if sunk ship
+
+            # if sunk
             if self.sunkShip(ship):
                 self.num_sunk += 1
                 return self.ship_size[ship]
             return 1
-        # if ship not at location
+        # if miss
         else:
             self.num_miss += 1
             self.attempts[x][y] = 1
@@ -218,15 +218,12 @@ class State:
         }
 
 class MDP:
-    def __init__(self):
-        self.start = self.startState()
+    def __init__(self, size = 10):
+        self.start = self.startState(size)
     # Return the start state.
-    def startState(self):
-        state = State(10)
+    def startState(self, size):
+        state = State(size)
         state.randomPlacement()
-        print("_____")
-        state.printShips()
-        print("_____")
         return state
 
     # Return set of actions possible from |state|.
@@ -247,7 +244,7 @@ class MDP:
     # Return a reward for taking an action from state to new_state
     def getReward(self, state, action, new_state):
         if new_state.isEnd():
-            return 100
+            return 100 - state.num_attempts
         if state.shipAt(action[0],action[1]):
             return 1
         return -1
@@ -270,31 +267,138 @@ class MDP:
     def discount(self):
         return 1.0
 
-    # Compute set of states reachable from startState.  Helper function for
-    # MDPAlgorithms to know which states to compute values and policies for.
-    # This function sets |self.states| to be the set of all states.
-    def computeStates(self):
-        self.states = set()
-        queue = []
-        self.states.add(self.start)
-        queue.append(self.start)
-        while len(queue) > 0:
-            state = queue.pop()
-            for action in self.getLegalActions(state):
-                for newState, prob, reward in self.succAndProbReward(state, action):
-                    if newState not in self.states:
-                        self.states.add(newState)
-                        queue.append(newState)
-        with open('5x5_states1.states', 'wb') as states_file:
-            pickle.dump(self.states, states_file)
-            '''
-                new_state = self.generateSuccessor(state, action)
-                if new_state == None:
-                    continue
-                #new_state.printAttempts()
-                #print new_state.num_attempts
-                #print '__________'
-                if new_state not in self.states:
-                    self.states.add(new_state)
-                    queue.append(new_state)
-            '''
+class QLearningAlgorithm:
+    def __init__(self, discount, explorationProb=0.2):
+        self.discount = discount
+        self.featureExtractor = self.identityFeatureExtractor
+        self.explorationProb = explorationProb
+        self.weights = defaultdict(float)
+        self.numIters = 0
+
+    def isAdjacent(self, state, action):
+        if action == None:
+            return 0
+
+        x = action[0]
+        y = action[1]
+
+        if state.inside(x-1, y) and state.attempts[x-1][y] > 1:
+            return 1
+        if state.inside(x+1, y) and state.attempts[x+1][y] > 1:
+            return 1
+        if state.inside(x, y-1) and state.attempts[x][y-1] > 1:
+            return 1
+        if state.inside(x, y+1) and state.attempts[x][y+1] > 1:
+            return 1
+        return 0
+
+    def identityFeatureExtractor(self, state, action):
+        attempt_action_feature = ((state.attempts, action), 1)
+        adjacent_feature = (action, self.isAdjacent(state, action))
+
+        return [adjacent_feature]
+
+    # Return the Q function associated with the weights and features
+    def getQ(self, state, action):
+        score = 0
+        for f, v in self.featureExtractor(state, action):
+            score += self.weights[f] * v
+        return score
+
+    # This algorithm will produce an action given a state.
+    # Here we use the epsilon-greedy algorithm: with probability
+    # |explorationProb|, take a random action.
+    def getAction(self, state):
+        self.numIters += 1
+        actions = state.getLegalShots()
+        if actions == []:
+            return None
+        if random.random() < self.explorationProb:
+            return random.choice(actions)
+        else:
+            return max((self.getQ(state, action), action) for action in actions)[1]
+
+    # Call this function to get the step size to update the weights.
+    def getStepSize(self):
+        return 1.0 / math.sqrt(self.numIters)
+
+    def copyTuple(self, oldTuple, indexToChange, newValue):
+        newTuple = ()
+        for i in range(len(oldTuple)):
+            if i == indexToChange:
+                newTuple += (newValue,)
+            else:
+                newTuple += (oldTuple[i],)
+        return newTuple
+
+    # We will call this function with (s, a, r, s'), which you should use to update |weights|.
+    # Note that if s is a terminal state, then s' will be None.  Remember to check for this.
+    # You should update the weights using self.getStepSize(); use
+    # self.getQ() to compute the current estimate of the parameters.
+    def incorporateFeedback(self, state, action, reward, newState):
+        # BEGIN_YOUR_CODE (our solution is 12 lines of code, but don't worry if you deviate from this)
+        phi = self.featureExtractor(state, action)
+        Q = self.getQ(state, action)
+        eta = self.getStepSize()
+        Vopt = 0
+        if newState != None:
+            newStateActions = newState.getLegalShots()
+            if newStateActions != []:
+                Vopt = max(self.getQ(newState, newAction) for newAction in newStateActions)
+        intermediateValue = (eta * (Q - (reward + self.discount * Vopt)))
+        for i in range(len(phi)):
+            phi[i] = self.copyTuple(phi[i], 1, intermediateValue * phi[i][1])
+
+        for f, v in phi:
+            self.weights[f] -= v
+        # END_YOUR_CODE
+
+def simulate(rl, numTrials=10, maxIterations=1000, verbose=False,
+             sort=False):
+    # Return i in [0, ..., len(probs)-1] with probability probs[i].
+    def sample(probs):
+        target = random.random()
+        accum = 0
+        for i, prob in enumerate(probs):
+            accum += prob
+            if accum >= target: return i
+        raise Exception("Invalid probs: %s" % probs)
+
+    totalRewards = []  # The rewards we get on each trial
+    lastAverage = 0.0
+    for trial in range(numTrials):
+        mdp = MDP()
+        state = mdp.start
+        sequence = [state]
+        totalDiscount = 1
+        totalReward = 0
+        total_attempts = 0
+        for _ in range(maxIterations):
+            action = rl.getAction(state)
+            transitions = mdp.succAndProbReward(state, action)
+            if sort: transitions = sorted(transitions)
+            if len(transitions) == 0:
+                rl.incorporateFeedback(state, action, 0, None)
+                break
+
+            # Choose a random transition
+            i = sample([prob for newState, prob, reward in transitions])
+            newState, prob, reward = transitions[i]
+            sequence.append(action)
+            sequence.append(reward)
+            sequence.append(newState)
+
+            rl.incorporateFeedback(state, action, reward, newState)
+            totalReward += totalDiscount * reward
+            totalDiscount *= mdp.discount()
+            total_attempts += 1
+            state = newState
+        if verbose:
+            #print "Trial %d (totalReward = %s): %s" % (trial, totalReward, sequence)
+            #print "Trial %d (totalReward = %s), total_attempts: %d" % (trial, totalReward, total_attempts)
+            lastAverage += total_attempts
+            if trial % 100 == 0 and trial != 0:
+                print "Last 100 average: %f" % (1.0*lastAverage/100)
+                lastAverage = 0
+        totalRewards.append(totalReward)
+    return totalRewards
