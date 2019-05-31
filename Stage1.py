@@ -64,13 +64,11 @@ class QLearningAlgorithm:
         phi = self.featureExtractor(state, action)
         Q = self.getQ(state, action)
         eta = self.getStepSize()
-        newStateActions = self.mdp.getLegalActions(newState)
-        if newStateActions == []:
-            Vopt = 0
-        else:
-            Vopt = max(self.getQ(newState, newAction) for newAction in newStateActions)
-        if newState == None:
-            Vopt = 0
+        Vopt = 0
+        if newState != None:
+            newStateActions = self.mdp.getLegalActions(newState)
+            if newStateActions != []:
+                Vopt = max(self.getQ(newState, newAction) for newAction in newStateActions)
         intermediateValue = (eta * (Q - (reward + self.discount * Vopt)))
         for i in range(len(phi)):
             phi[i] = self.copyTuple(phi[i], 1, intermediateValue * phi[i][1])
@@ -91,6 +89,7 @@ def simulate(mdp, rl, numTrials=10, maxIterations=1000, verbose=False,
         raise Exception("Invalid probs: %s" % probs)
 
     totalRewards = []  # The rewards we get on each trial
+    lastAverage = 0.0
     for trial in range(numTrials):
         state = mdp.start
         sequence = [state]
@@ -116,7 +115,12 @@ def simulate(mdp, rl, numTrials=10, maxIterations=1000, verbose=False,
             totalDiscount *= mdp.discount()
             state = newState
         if verbose:
-            print "Trial %d (totalReward = %s): %s" % (trial, totalReward, sequence)
+            #print "Trial %d (totalReward = %s): %s" % (trial, totalReward, sequence)
+            print "Trial %d (totalReward = %s)" % (trial, totalReward)
+            lastAverage += totalReward
+            if trial % 500 == 0 and trial != 0:
+                #print "Last 500 average: %f" % (1.0*lastAverage/500)
+                lastAverage = 0
         totalRewards.append(totalReward)
     return totalRewards
 
@@ -128,5 +132,5 @@ mdp = MDP()
 rl = QLearningAlgorithm(mdp, 0.95, 0.2)
 # We call this here so that the stepSize will be 1
 print("beginning simulate")
-simulate(mdp, rl, 100, verbose=True)
+simulate(mdp, rl, 10000, verbose=True)
 print("finished simulate")

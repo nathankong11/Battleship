@@ -3,6 +3,8 @@ from copy import *
 import pickle
 from collections import *
 
+
+
 class State:
     """
     A 2-dimensional array. Data is accessed
@@ -220,7 +222,7 @@ class MDP:
         self.start = self.startState()
     # Return the start state.
     def startState(self):
-        state = State(5)
+        state = State(10)
         state.randomPlacement()
         print("_____")
         state.printShips()
@@ -247,7 +249,7 @@ class MDP:
         if new_state.isEnd():
             return 100
         if state.shipAt(action[0],action[1]):
-            return 2
+            return 1
         return -1
 
     # Return a list of (new_state, prob, reward) tuples corresponding to edges
@@ -256,6 +258,8 @@ class MDP:
     #   state = s, action = a, new_state = s', prob = T(s, a, s'), reward = Reward(s, a, s')
     # If IsEnd(state), return the empty list.
     def succAndProbReward(self, state, action):
+        if state.isEnd():
+            return []
         if action == None:
             return []
         new_state = self.generateSuccessor(state, action)
@@ -264,7 +268,7 @@ class MDP:
         return [(new_state, 1.0, self.getReward(state, action, new_state))]
 
     def discount(self):
-        return 0.9
+        return 1.0
 
     # Compute set of states reachable from startState.  Helper function for
     # MDPAlgorithms to know which states to compute values and policies for.
