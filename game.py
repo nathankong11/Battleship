@@ -244,9 +244,9 @@ class MDP:
     # Return a reward for taking an action from state to new_state
     def getReward(self, state, action, new_state):
         if new_state.isEnd():
-            return 100 - state.num_attempts
+            return 1000 / state.num_attempts
         if state.shipAt(action[0],action[1]):
-            return 1
+            return 2
         return -1
 
     # Return a list of (new_state, prob, reward) tuples corresponding to edges
@@ -366,8 +366,10 @@ def simulate(rl, numTrials=10, maxIterations=1000, verbose=False,
 
     totalRewards = []  # The rewards we get on each trial
     lastAverage = 0.0
+    mdp = MDP()
     for trial in range(numTrials):
-        mdp = MDP()
+        if trial % 4 == 0:
+            mdp = MDP()
         state = mdp.start
         sequence = [state]
         totalDiscount = 1
