@@ -3,6 +3,7 @@ from copy import *
 import pickle
 from collections import *
 import math
+import time
 
 class State:
     """
@@ -44,6 +45,7 @@ class State:
         self.num_hit = 0
         self.num_miss = 0
         self.num_sunk = 0
+        self.num_consecutive_miss = 0
         self.ship_hits = {
         'destroyer': 0,
         'submarine': 0,
@@ -135,6 +137,7 @@ class State:
         # if hit
         if self.shipAt(x,y):
             self.num_hit += 1
+            self.num_consecutive_miss = 0
             self.attempts[x][y] = 2
             ship = self.ships[x][y]
             self.ship_hits[ship] += 1
@@ -147,6 +150,7 @@ class State:
         # if miss
         else:
             self.num_miss += 1
+            self.num_consecutive_miss += 1
             self.attempts[x][y] = 1
             return 0
 
@@ -202,6 +206,7 @@ class State:
         self.num_hit = 0
         self.num_miss = 0
         self.num_sunk = 0
+        self.num_consecutive_miss = 0
         self.ship_hits = {
         'destroyer': 0,
         'submarine': 0,
@@ -276,27 +281,47 @@ class QLearningAlgorithm:
         self.numIters = 0
 
     def isAdjacent(self, state, action):
+        adjacent = 0
         if action == None:
-            return 0
+            return adjacent
 
         x = action[0]
         y = action[1]
 
         if state.inside(x-1, y) and state.attempts[x-1][y] > 1:
-            return 1
+            adjacent = 1
         if state.inside(x+1, y) and state.attempts[x+1][y] > 1:
-            return 1
+            adjacent = 1
         if state.inside(x, y-1) and state.attempts[x][y-1] > 1:
-            return 1
+            adjacent = 1
         if state.inside(x, y+1) and state.attempts[x][y+1] > 1:
-            return 1
-        return 0
+            adjacent = 1
+        return adjacent
+
+    def isDiag(self, state, action):
+        diag = 0
+        if action == None:
+            return diag
+
+        x = action[0]
+        y = action[1]
+
+        if state.inside(x-1, y-1) and state.attempts[x-1][y-1] > 1:
+            diag = 1
+        if state.inside(x-1, y+1) and state.attempts[x-1][y+1] > 1:
+            diag = 1
+        if state.inside(x+1, y-1) and state.attempts[x+1][y-1] > 1:
+            diag = 1
+        if state.inside(x+1, y+1) and state.attempts[x+1][y+1] > 1:
+            diag = 1
+        return diag
 
     def identityFeatureExtractor(self, state, action):
-        attempt_action_feature = ((state.attempts, action), 1)
-        adjacent_feature = (action, self.isAdjacent(state, action))
+        adjacent_feature = ((action, "adj"), self.isAdjacent(state, action))
+        diag_feature = ((action, "diag"), self.isDiag(state, action))
 
-        return [adjacent_feature]
+        #return [adjacent_feature]
+        return [adjacent_feature, diag_feature]
 
     # Return the Q function associated with the weights and features
     def getQ(self, state, action):
@@ -313,10 +338,22 @@ class QLearningAlgorithm:
         actions = state.getLegalShots()
         if actions == []:
             return None
+
         if random.random() < self.explorationProb:
             return random.choice(actions)
         else:
-            return max((self.getQ(state, action), action) for action in actions)[1]
+            best_actions = []
+            best_val = float('-Inf')
+            for action in actions:
+                val = self.getQ(state, action)
+                if val > best_val:
+                    best_val = val
+                    best_actions = [action]
+                if val == best_val:
+                    best_actions.append(action)
+            return random.choice(best_actions)
+
+            #return max((self.getQ(state, action), action) for action in actions)[1]
 
     # Call this function to get the step size to update the weights.
     def getStepSize(self):
@@ -353,8 +390,7 @@ class QLearningAlgorithm:
             self.weights[f] -= v
         # END_YOUR_CODE
 
-def simulate(rl, numTrials=10, maxIterations=1000, verbose=False,
-             sort=False):
+def simulate(rl, numTrials=10, maxIterations=1000, verbose=False, sort=False):
     # Return i in [0, ..., len(probs)-1] with probability probs[i].
     def sample(probs):
         target = random.random()
@@ -375,7 +411,7 @@ def simulate(rl, numTrials=10, maxIterations=1000, verbose=False,
         totalDiscount = 1
         totalReward = 0
         total_attempts = 0
-        for _ in range(maxIterations):
+        for n in range(maxIterations):
             action = rl.getAction(state)
             transitions = mdp.succAndProbReward(state, action)
             if sort: transitions = sorted(transitions)
@@ -394,6 +430,16 @@ def simulate(rl, numTrials=10, maxIterations=1000, verbose=False,
             totalReward += totalDiscount * reward
             totalDiscount *= mdp.discount()
             total_attempts += 1
+            #'''
+            if trial % 100 == 0:
+                print '------------------'
+                state.printAttempts()
+                print '\n'
+                if n < 30:
+                    time.sleep(0.5)
+                else:
+                    time.sleep(0.1)
+            #'''
             state = newState
         if verbose:
             #print "Trial %d (totalReward = %s): %s" % (trial, totalReward, sequence)
