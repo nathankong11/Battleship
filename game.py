@@ -316,12 +316,33 @@ class QLearningAlgorithm:
             diag = 1
         return diag
 
+    def isLine(self, state, action):
+            if action == None:
+                return 0
+
+            x = action[0]
+            y = action[1]
+
+            if state.inside(x-1, y) and state.attempts[x-1][y] > 1:
+                if state.inside(x-2, y) and state.attempts[x-2][y] > 1:
+                    return 1
+            if state.inside(x+1, y) and state.attempts[x+1][y] > 1:
+                if state.inside(x+2, y) and state.attempts[x+2][y] > 1:
+                    return 1
+            if state.inside(x, y-1) and state.attempts[x][y-1] > 1:
+                if state.inside(x, y-2) and state.attempts[x][y-2] > 1:
+                    return 1
+            if state.inside(x, y+1) and state.attempts[x][y+1] > 1:
+                if state.inside(x, y+2) and state.attempts[x][y+2] > 1:
+                    return 1
+            return 0
+
     def identityFeatureExtractor(self, state, action):
         adjacent_feature = ((action, "adj"), self.isAdjacent(state, action))
         diag_feature = ((action, "diag"), self.isDiag(state, action))
+        line_feature = ((action, "line"), self.isLine(state, action))
 
-        #return [adjacent_feature]
-        return [adjacent_feature, diag_feature]
+        return [adjacent_feature, diag_feature, line_feature]
 
     # Return the Q function associated with the weights and features
     def getQ(self, state, action):
@@ -430,7 +451,7 @@ def simulate(rl, numTrials=10, maxIterations=1000, verbose=False, sort=False):
             totalReward += totalDiscount * reward
             totalDiscount *= mdp.discount()
             total_attempts += 1
-            #'''
+            '''
             if trial % 100 == 0:
                 print '------------------'
                 state.printAttempts()
@@ -439,11 +460,9 @@ def simulate(rl, numTrials=10, maxIterations=1000, verbose=False, sort=False):
                     time.sleep(0.5)
                 else:
                     time.sleep(0.1)
-            #'''
+            '''
             state = newState
         if verbose:
-            #print "Trial %d (totalReward = %s): %s" % (trial, totalReward, sequence)
-            #print "Trial %d (totalReward = %s), total_attempts: %d" % (trial, totalReward, total_attempts)
             lastAverage += total_attempts
             if trial % 100 == 0 and trial != 0:
                 print "Last 100 average: %f" % (1.0*lastAverage/100)
