@@ -347,8 +347,14 @@ class QLearningAlgorithm:
         line_feature = ((action, "line"), self.isLine(state, action))
         diag_feature = ((action, "diag"), self.isDiag(state, action))
         parity_feature = ((action), self.parity(action))
-
+        #destroyer_feature = ((action, "destroyer"), state.sunk_ships['destroyer'])
+        #submarine_feature = ((action, "submarine"), state.sunk_ships['submarine'])
+        #cruiser_feature = ((action, "cruiser"), state.sunk_ships['cruiser'])
+        #battleship_feature = ((action, "battleship"), state.sunk_ships['battleship'])
+        #carrier_feature = ((action, "carrier"), state.sunk_ships['carrier'])
+        
         return [adjacent_feature, line_feature, diag_feature, parity_feature]
+        #return [adjacent_feature, line_feature, diag_feature, parity_feature, destroyer_feature, submarine_feature, cruiser_feature, battleship_feature, carrier_feature]
 
     # Return the Q function associated with the weights and features
     def getQ(self, state, action):
