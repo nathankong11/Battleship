@@ -337,12 +337,18 @@ class QLearningAlgorithm:
                     return 1
             return 0
 
+    def parity(self, action):
+        if action == None:
+                return 0
+        return (action[0] + action[1]) % 2
+
     def identityFeatureExtractor(self, state, action):
         adjacent_feature = ((action, "adj"), self.isAdjacent(state, action))
-        diag_feature = ((action, "diag"), self.isDiag(state, action))
         line_feature = ((action, "line"), self.isLine(state, action))
+        diag_feature = ((action, "diag"), self.isDiag(state, action))
+        parity_feature = ((action), self.parity(action))
 
-        return [adjacent_feature, diag_feature, line_feature]
+        return [adjacent_feature, line_feature, diag_feature, parity_feature]
 
     # Return the Q function associated with the weights and features
     def getQ(self, state, action):
