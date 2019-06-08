@@ -7,7 +7,7 @@ import time
 
 class State:
     """
-    A 2-dimensional array. Data is accessed
+    The board is represented as a 2-dimensional array. Data is accessed
     via grid[x][y] where (x,y) are positions with x horizontal,
     y vertical and the origin (0,0) in the top left corner.
 
@@ -352,7 +352,7 @@ class QLearningAlgorithm:
         #cruiser_feature = ((action, "cruiser"), state.sunk_ships['cruiser'])
         #battleship_feature = ((action, "battleship"), state.sunk_ships['battleship'])
         #carrier_feature = ((action, "carrier"), state.sunk_ships['carrier'])
-        
+
         return [adjacent_feature, line_feature, diag_feature, parity_feature]
         #return [adjacent_feature, line_feature, diag_feature, parity_feature, destroyer_feature, submarine_feature, cruiser_feature, battleship_feature, carrier_feature]
 
