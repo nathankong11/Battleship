@@ -432,7 +432,7 @@ def simulate(rl, numTrials=10, maxIterations=1000, verbose=False, sort=False):
     mdp = MDP()
     for trial in range(numTrials):
         if trial % 4 == 0:
-            mdp = MDP()
+            mdp = MDP() #Creates a new game board
         state = mdp.start
         sequence = [state]
         totalDiscount = 1
@@ -457,21 +457,13 @@ def simulate(rl, numTrials=10, maxIterations=1000, verbose=False, sort=False):
             totalReward += totalDiscount * reward
             totalDiscount *= mdp.discount()
             total_attempts += 1
-            '''
-            if trial % 100 == 0:
-                print '------------------'
-                state.printAttempts()
-                print '\n'
-                if n < 30:
-                    time.sleep(0.5)
-                else:
-                    time.sleep(0.1)
-            '''
+
             state = newState
         if verbose:
             lastAverage += total_attempts
             if trial % 100 == 0 and trial != 0:
-                print "Last 100 average: %f" % (1.0*lastAverage/100)
+                #Output avereage over last 100 trials
+                print "%f" % (1.0*lastAverage/100)
                 lastAverage = 0
         totalRewards.append(totalReward)
     return totalRewards
